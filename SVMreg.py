@@ -111,4 +111,38 @@ if SetChoice == "Combined":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
+    
+ #TODO: Change vectX to vectX[test]
+ #TODO : Figure out what alogrithm and leaf size to use
+ #TODO : Fix dictionary appending of data
+ #TODO : Distance function between labels
+ #TODO : Summation of distance and similarity function
 
+def knearest():
+     nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
+     radius=1.0).fit(vectX)
+     distances, indices = nbrs.kneighbors(vectX)
+     print(distances)
+     print(indices)
+     return indices
+     #nbrs.kneighbors_graph(vectX).toarray()
+
+def getlabel(indices):
+    ldict = dict()
+    raw_labels = [(vectX[x], y[x]) for x in indices]
+    
+    for x in raw_labels:
+        key = (0,1,2,3)
+        ldict.setdefault(key,[]).append(raw_labels)
+        
+    print(ldict.items())   
+    return ldict
+
+def distance(labels):
+    #dist = labels.get(1) - labels.get(3)
+    #print(dist)
+
+
+indices = knearest()
+label_dictionary = getlabel(indices)
+#distance(label_dictionary)
