@@ -55,11 +55,11 @@ if SetChoice == "Combined":
     print("Using Combined")
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
-    vectX = vectX_traintest[:156060]
-    vectX_test = vectX_traintest[156061:]
-    vectX = vectX[:200] #CUT FOR REG, can remove
+    vectX = vectX_traintest[:15606]
+    vectX_test = vectX_traintest[15607:]
+    vectX = vectX[:20000] #CUT FOR REG, can remove
     vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
-    y = df_traintest[:156060].Sentiment
+    y = df_traintest[:15606].Sentiment
     y = y[:20000] #CUT FOR REG, can remove
 
 # For when classifying all phrases
@@ -78,7 +78,7 @@ if SetChoice == "Sentences":
     X = df_drop_train.Phrase
     y = df_drop_train.Sentiment
     vectX = vectorizer.fit_transform(X)
-"""
+
 #K fold cross evaluation for SVM OVA
 skf = StratifiedKFold(n_splits=3)
 for train, test in skf.split(vectX, y):
@@ -111,42 +111,34 @@ if SetChoice == "Combined":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
-""" 
+ 
  #TODO: Change vectX to vectX[test]
  #TODO : Figure out what alogrithm and leaf size to use
  #TODO : Fix dictionary appending of data
  #TODO : Distance function between labels
  #TODO : Summation of distance and similarity function
 
- #def knearest():
-nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
-radius=1.0).fit(vectX)
-distances, indices = nbrs.kneighbors(vectX)
+def knearest():
+ nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
+ radius=1.0).fit(vectX_test)
+ distances, indices = nbrs.kneighbors(vectX_test)
      
-print(distances)
-print(indices)
+ print(distances)
+ print(indices)
      #nbrs.kneighbors_graph(vectX).toarray()
 
-#def getlabel(indices):
+def getlabel(indices):
+    array = 21
+    ldict = [(y[x]) for x in indices]
+
+    for i in range(array):
+        label_dist = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
+    return label_dist
+
+def sim(labels):
+    sim
 
 
-array = 21
-ldict = [(y[x]) for x in indices]
-
-for i in range(array):
-    print(np.abs(ldict[i].iloc[0]-ldict[i].iloc[1]))
-
-print(ldict)
-
-    #for x in ldict:
-    #    key = (0,1,2,3)
-    #    ldict.setdefault(key,[]).append(ldict)   
-
-#def distance(labels):
-    #dist = labels.get(1) - labels.get(3)
-    #print(dist)
-
-
-#indices = knearest()
-#getlabel(indices)
-#distance(label_dictionary)
+indices = knearest()
+labels = getlabel(indices)
+#sim = distance(labels)
