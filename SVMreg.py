@@ -71,7 +71,7 @@ if SetChoice == "Phrases":
     X = df_cut_train.Phrase
     y = df_cut_train.Sentiment
     vectX = vectorizer.fit_transform(X)
-
+"""
 #For When classifying only sentences/reviews
 if SetChoice == "Sentences":
     print("Using Sentences")
@@ -111,7 +111,7 @@ if SetChoice == "Combined":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
-    
+""" 
  #TODO: Change vectX to vectX[test]
  #TODO : Figure out what alogrithm and leaf size to use
  #TODO : Fix dictionary appending of data
