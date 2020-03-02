@@ -135,7 +135,7 @@ def getlabel(indices):
     #    key = (0,1,2,3)
     #    ldict.setdefault(key,[]).append(ldict)
         
-    print(ldict.items())   
+    print(ldict)   
     return ldict
 
 def distance(labels):
