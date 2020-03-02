@@ -129,11 +129,11 @@ def knearest():
 
 def getlabel(indices):
     ldict = dict()
-    raw_labels = [(vectX[x], y[x]) for x in indices]
+    ldict = [(vectX[x], y[x]) for x in indices]
     
-    for x in raw_labels:
-        key = (0,1,2,3)
-        ldict.setdefault(key,[]).append(raw_labels)
+    #for x in ldict:
+    #    key = (0,1,2,3)
+    #    ldict.setdefault(key,[]).append(ldict)
         
     print(ldict.items())   
     return ldict
@@ -143,6 +143,6 @@ def distance(labels):
     #print(dist)
 
 
-indices = knearest()
-label_dictionary = getlabel(indices)
+  indices = knearest()
+  label_dictionary = getlabel(indices)
 #distance(label_dictionary)
