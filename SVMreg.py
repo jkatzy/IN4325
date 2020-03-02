@@ -57,7 +57,7 @@ if SetChoice == "Combined":
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
     vectX_test = vectX_traintest[156061:]
-    vectX = vectX[:20000] #CUT FOR REG, can remove
+    vectX = vectX[:200] #CUT FOR REG, can remove
     vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
     y = y[:20000] #CUT FOR REG, can remove
@@ -71,14 +71,14 @@ if SetChoice == "Phrases":
     X = df_cut_train.Phrase
     y = df_cut_train.Sentiment
     vectX = vectorizer.fit_transform(X)
-"""
+
 #For When classifying only sentences/reviews
 if SetChoice == "Sentences":
     print("Using Sentences")
     X = df_drop_train.Phrase
     y = df_drop_train.Sentiment
     vectX = vectorizer.fit_transform(X)
-
+"""
 #K fold cross evaluation for SVM OVA
 skf = StratifiedKFold(n_splits=3)
 for train, test in skf.split(vectX, y):
@@ -118,31 +118,35 @@ if SetChoice == "Combined":
  #TODO : Distance function between labels
  #TODO : Summation of distance and similarity function
 
-def knearest():
-     nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
-     radius=1.0).fit(vectX)
-     distances, indices = nbrs.kneighbors(vectX)
-     print(distances)
-     print(indices)
-     return indices
+ #def knearest():
+nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
+radius=1.0).fit(vectX)
+distances, indices = nbrs.kneighbors(vectX)
+     
+print(distances)
+print(indices)
      #nbrs.kneighbors_graph(vectX).toarray()
 
-def getlabel(indices):
-    ldict = dict()
-    ldict = [(vectX[x], y[x]) for x in indices]
-    
+#def getlabel(indices):
+
+
+array = 21
+ldict = [(y[x]) for x in indices]
+
+for i in range(array):
+    print(np.abs(ldict[i].iloc[0]-ldict[i].iloc[1]))
+
+print(ldict)
+
     #for x in ldict:
     #    key = (0,1,2,3)
-    #    ldict.setdefault(key,[]).append(ldict)
-        
-    print(ldict)   
-    return ldict
+    #    ldict.setdefault(key,[]).append(ldict)   
 
-def distance(labels):
+#def distance(labels):
     #dist = labels.get(1) - labels.get(3)
     #print(dist)
 
 
-  indices = knearest()
-  label_dictionary = getlabel(indices)
+#indices = knearest()
+#getlabel(indices)
 #distance(label_dictionary)
