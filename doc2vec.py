@@ -24,7 +24,7 @@ class Vectorizer:
             for i, line in enumerate(f):
                 split = line.split('\t')
                 tokens = gensim.utils.simple_preprocess(remove_stopwords(split[2]))
-                #tokens = gensim.utils.lemmatize(split[2])
+                tokens = gensim.utils.lemmatize(split[2])
                 if not self.train:
                     yield tokens
                 else:
