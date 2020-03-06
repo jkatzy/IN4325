@@ -58,10 +58,17 @@ if SetChoice == "Combined":
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
     vectX_test = vectX_traintest[156061:]
+<<<<<<< HEAD
     vectX = vectX[:2000] #CUT FOR REG, can remove
     vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
     y = y[:2000] #CUT FOR REG, can remove
+=======
+    vectX = vectX[:20000] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
+    y = df_traintest[:156060].Sentiment
+    y = y[:20000] #CUT FOR REG, can remove
+>>>>>>> origin/SVM-TFID-KNN
 
 # For when classifying all phrases
 if SetChoice == "Phrases":
