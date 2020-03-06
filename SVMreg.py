@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import confusion_matrix as cm
 
 from sklearn.svm import SVR
 
@@ -55,19 +56,19 @@ if SetChoice == "Combined":
     print("Using Combined")
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
-    vectX = vectX_traintest[:15606]
-    vectX_test = vectX_traintest[15607:]
-    vectX = vectX[:20000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
-    y = df_traintest[:15606].Sentiment
-    y = y[:20000] #CUT FOR REG, can remove
+    vectX = vectX_traintest[:156060]
+    vectX_test = vectX_traintest[156061:]
+    vectX = vectX[:2000] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
+    y = df_traintest[:156060].Sentiment
+    y = y[:2000] #CUT FOR REG, can remove
 
 # For when classifying all phrases
 if SetChoice == "Phrases":
     print("Using Phrases")
     #cut to reduce run time when using svr
-    df_cut_train = df_train[:20000]
-    df_cut_test = df_test[:20000]
+    df_cut_train = df_train[:200]
+    df_cut_test = df_test[:200]
     X = df_cut_train.Phrase
     y = df_cut_train.Sentiment
     vectX = vectorizer.fit_transform(X)
@@ -100,6 +101,11 @@ if SetChoice == "Combined":
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
     print(total_list)
+    y_true = np.array(y)
+    #Confusion Matrix
+    my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0])
+    print(my_cm)
+    
     print(np.var(total_list))
     print(np.mean(total_list))
 
@@ -111,7 +117,8 @@ if SetChoice == "Combined":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
- 
+
+    
  #TODO: Change vectX to vectX[test]
  #TODO : Figure out what alogrithm and leaf size to use
  #TODO : Fix dictionary appending of data
@@ -120,25 +127,31 @@ if SetChoice == "Combined":
 
 def knearest():
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
- radius=1.0).fit(vectX_test)
- distances, indices = nbrs.kneighbors(vectX_test)
+ radius=1.0).fit(vectX)
+ distances, indices = nbrs.kneighbors(vectX)
      
  print(distances)
  print(indices)
+ return indices
      #nbrs.kneighbors_graph(vectX).toarray()
 
 def getlabel(indices):
     array = 21
+    
     ldict = [(y[x]) for x in indices]
-
     for i in range(array):
         label_dist = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
+        #label_dist = np.abs(ldict[0]-ldict[1])
+        #print(label_dist)
+        print(label_dist)
     return label_dist
 
-def sim(labels):
-    sim
 
+def similarity(indices):
+    wn.path_similarity()
+    return 1
 
 indices = knearest()
-labels = getlabel(indices)
+label_dist = getlabel(indices)
+#similarity(label_dist)
 #sim = distance(labels)
