@@ -23,6 +23,12 @@ from scipy import spatial
 
 from nltk import pos_tag
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn import svm, datasets
+from sklearn.metrics import plot_confusion_matrix
+
 
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
@@ -59,7 +65,7 @@ vectorizer = TfidfVectorizer(min_df = 5,
                              use_idf = True)
 
 # Select which set to use
-SetChoice= "Combined"
+SetChoice= "Sentences"
 
 # Combine the train and test set into one file such that tfidf vectorizer will give same feature vector length, required for when predicting
 if SetChoice == "Combined":
@@ -110,20 +116,15 @@ for train, test in skf_svr.split(vectX, y):
     test_score = svr.score(vectX[test], y[test])
     print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
 
-if SetChoice == "Combined":
+if SetChoice == "Sentences":
     #predict test set with svc
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
     print(total_list)
     y_true = np.array(y)
-    #Confusion Matrix
-    my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0,4.0])
-    print(my_cm)
     
     print(np.var(total_list))
-    print(np.mean(total_list))
-    
-    
+    print(np.mean(total_list))    
     #print(vectorizer.get_feature_names())
 
     #Naive Bayes classifier for PSP
@@ -133,6 +134,30 @@ if SetChoice == "Combined":
     print(prediction)
     print(len(prediction))
 
+def confusion_matrix(classifier, X, y_true, y_pred):
+    
+    my_cm = cm(y_true, y_pred, labels=[0.0,1.0,2.0,3.0,4.0])
+    print(my_cm)
+    
+    labels=[0.0,1.0,2.0,3.0,4.0]
+    np.set_printoptions(precision=2)    
+    # Plot non-normalized confusion matrix
+    titles_options = [("Confusion matrix, without normalization", None),
+                  ("Normalized confusion matrix", 'true')]
+    for title, normalize in titles_options:
+        disp = plot_confusion_matrix(classifier, X ,y_true,
+                                 display_labels=labels,
+                                 cmap=plt.cm.Reds,
+                                 normalize=normalize)   
+    disp.ax_.set_title(title)
+    print(title)
+    print(disp.confusion_matrix)   
+    plt.show()
+
+#Generate confusion matrices     
+
+cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
+print(cm_1)
     
  #TODO: Change vectX to vectX[test]
  #TODO : Figure out what alogrithm and leaf size to use
@@ -244,7 +269,7 @@ def getlabel(indices):
     return label_dist
 
 #Final equation from paper Seeing Stars:... by Pang Lee
-    
+'''
 def total_equation(sim, indices, label_dist):
     print('reached total_equation')
     
@@ -265,8 +290,9 @@ def total_equation(sim, indices, label_dist):
 indices = knearest()
 label_dist = getlabel(indices)
 sim = get_similarity(indices)
-'''
+
 output = total_equation(sim, indices, label_dist)
-'''
+
 #similarity(label_dist)
 #sim = distance(labels)
+'''
