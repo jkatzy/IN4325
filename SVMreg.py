@@ -11,8 +11,18 @@ from sklearn.svm import SVR
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
-
 from sklearn.neighbors import NearestNeighbors
+
+import nltk 
+#nltk.download('all')
+from nltk.corpus import wordnet as wn
+
+from nltk.corpus import stopwords, wordnet 
+from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
+from scipy import spatial
+
+from nltk import pos_tag
+
 
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
@@ -56,26 +66,23 @@ if SetChoice == "Combined":
     print("Using Combined")
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
-    vectX = vectX_traintest[:156060]
-    vectX_test = vectX_traintest[156061:]
-<<<<<<< HEAD
+    vectX = vectX_traintest[:15606]
+    vectX_test = vectX_traintest[15606:]
     vectX = vectX[:2000] #CUT FOR REG, can remove
     vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
-    y = df_traintest[:156060].Sentiment
+    y = df_traintest[:15606].Sentiment
     y = y[:2000] #CUT FOR REG, can remove
-=======
-    vectX = vectX[:20000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
-    y = df_traintest[:156060].Sentiment
-    y = y[:20000] #CUT FOR REG, can remove
->>>>>>> origin/SVM-TFID-KNN
+    vectX = vectX[:2000] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
+    y = df_traintest[:15606].Sentiment
+    y = y[:2000] #CUT FOR REG, can remove
 
 # For when classifying all phrases
 if SetChoice == "Phrases":
     print("Using Phrases")
     #cut to reduce run time when using svr
-    df_cut_train = df_train[:200]
-    df_cut_test = df_test[:200]
+    df_cut_train = df_train[:250]
+    df_cut_test = df_test[:250]
     X = df_cut_train.Phrase
     y = df_cut_train.Sentiment
     vectX = vectorizer.fit_transform(X)
@@ -110,12 +117,13 @@ if SetChoice == "Combined":
     print(total_list)
     y_true = np.array(y)
     #Confusion Matrix
-    my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0])
+    my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0,4.0])
     print(my_cm)
     
     print(np.var(total_list))
     print(np.mean(total_list))
-
+    
+    
     #print(vectorizer.get_feature_names())
 
     #Naive Bayes classifier for PSP
@@ -132,33 +140,133 @@ if SetChoice == "Combined":
  #TODO : Distance function between labels
  #TODO : Summation of distance and similarity function
 
+def penn_to_wn(tag):
+    """ Convert between a Penn Treebank tag to a simplified Wordnet tag """
+    if tag.startswith('N'):
+        return 'n'
+ 
+    if tag.startswith('V'):
+        return 'v'
+ 
+    if tag.startswith('J'):
+        return 'a'
+ 
+    if tag.startswith('R'):
+        return 'r'
+    return None
+
+def tagged_to_synset(word, tag):
+    wn_tag = penn_to_wn(tag)
+    if wn_tag is None:
+        return None
+    try:
+        return wn.synsets(word, wn_tag)[0]
+    except:
+        return None
+
+
+def sentence_similarity(sentence1, sentence2):
+
+    """ compute the sentence similarity using Wordnet """
+    # Tokenize and tag
+    sentence1 = pos_tag(word_tokenize(sentence1))
+    sentence2 = pos_tag(word_tokenize(sentence2))
+ 
+    # Get the synsets for the tagged words
+    synsets1 = [tagged_to_synset(*tagged_word) for tagged_word in sentence1]
+    synsets2 = [tagged_to_synset(*tagged_word) for tagged_word in sentence2]
+ 
+    # Filter out the Nones
+    synsets1 = [ss for ss in synsets1 if ss]
+    synsets2 = [ss for ss in synsets2 if ss]
+  
+    score, count = 0.0, 0
+    # For each word in the first sentence
+    for synset in synsets1:
+        # Get the similarity value of the most similar word in the other sentence
+        # Check that the similarity could have been computed
+            try:
+                best_score = max([synset.path_similarity(ss) for ss in synsets2]) 
+                score += best_score
+                count += 1
+                score /= count
+                return score
+            except:
+                return None        
+
+
 def knearest():
+    
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
  radius=1.0).fit(vectX)
  distances, indices = nbrs.kneighbors(vectX)
-     
+ 
  print(distances)
- print(indices)
- return indices
-     #nbrs.kneighbors_graph(vectX).toarray()
+ 
+ small_indices = indices[:20]
+ return small_indices
+
+def get_similarity(indices):
+ w,h = 1, 20
+ #h is the number of lists, w is the number of items
+ sim = [[0 for x in range(w)] for y in range(h)] 
+
+ #print (indices)
+ #print(type(sim)) 
+ X = df_drop_train.Phrase
+
+ for k in range(h):
+         for i in indices:  
+             #Cosine similarity -. most values equate to 1
+             #cosim = 1 - spatial.distance.cosine(int(y[i[0]]), int(y[i[1]]))
+             score = sentence_similarity(X.iloc[i[0]],X.iloc[i[1]])            
+             if score == None: 
+                 score = 0
+             #Similarity Wordnet 
+             #sim[k] = [i[0], i[1], score]
+             sim[k] = score
+ print('done with sim')
+ return sim
 
 def getlabel(indices):
-    array = 21
-    
+    #Size of label_dist = 200
+    h = 20
     ldict = [(y[x]) for x in indices]
-    for i in range(array):
-        label_dist = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
+    label_dist = [0 for z in range(h)]
+
+    for i in range(h):
+        score = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
+        label_dist[i] = int(score)
         #label_dist = np.abs(ldict[0]-ldict[1])
         #print(label_dist)
-        print(label_dist)
+    
+    print('done with label_dist')
     return label_dist
 
-
-def similarity(indices):
-    wn.path_similarity()
-    return 1
-
+#Final equation from paper Seeing Stars:... by Pang Lee
+    
+def total_equation(sim, indices, label_dist):
+    print('reached total_equation')
+    
+    w = 15
+    output = [0 for x in range(w)]
+    
+    for x in indices:
+        output = (y[x[0]]) 
+        main = label_dist[(x)]
+        main2 = sim[x]
+        print(output)  
+        print(main)
+        print(main2)
+      
+    return output
+    
+#Function Calls
 indices = knearest()
 label_dist = getlabel(indices)
+sim = get_similarity(indices)
+'''
+output = total_equation(sim, indices, label_dist)
+'''
 #similarity(label_dist)
 #sim = distance(labels)
