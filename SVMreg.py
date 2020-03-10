@@ -65,7 +65,7 @@ vectorizer = TfidfVectorizer(min_df = 5,
                              use_idf = True)
 
 # Select which set to use
-SetChoice= "Sentences"
+SetChoice= "Combined"
 
 # Combine the train and test set into one file such that tfidf vectorizer will give same feature vector length, required for when predicting
 if SetChoice == "Combined":
@@ -116,7 +116,7 @@ for train, test in skf_svr.split(vectX, y):
     test_score = svr.score(vectX[test], y[test])
     print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
 
-if SetChoice == "Sentences":
+if SetChoice == "Combined":
     #predict test set with svc
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
@@ -133,8 +133,15 @@ if SetChoice == "Sentences":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
+    
+    h = 20
+    mapping = [0 for z in range(h)]
 
-def confusion_matrix(classifier, X, y_true, y_pred):
+    for i in range(h):
+        mapping[i] = -1*(total_list[i] - y[i])
+    print('Mapping', mapping)
+    
+def confusion_matrix(classifier, vectX, y_true, y_pred):
     
     my_cm = cm(y_true, y_pred, labels=[0.0,1.0,2.0,3.0,4.0])
     print(my_cm)
@@ -145,7 +152,7 @@ def confusion_matrix(classifier, X, y_true, y_pred):
     titles_options = [("Confusion matrix, without normalization", None),
                   ("Normalized confusion matrix", 'true')]
     for title, normalize in titles_options:
-        disp = plot_confusion_matrix(classifier, X ,y_true,
+        disp = plot_confusion_matrix(classifier, vectX ,y_true,
                                  display_labels=labels,
                                  cmap=plt.cm.Reds,
                                  normalize=normalize)   
@@ -155,7 +162,6 @@ def confusion_matrix(classifier, X, y_true, y_pred):
     plt.show()
 
 #Generate confusion matrices     
-
 cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
 print(cm_1)
     
@@ -244,6 +250,7 @@ def get_similarity(indices):
          for i in indices:  
              #Cosine similarity -. most values equate to 1
              #cosim = 1 - spatial.distance.cosine(int(y[i[0]]), int(y[i[1]]))
+             
              score = sentence_similarity(X.iloc[i[0]],X.iloc[i[1]])            
              if score == None: 
                  score = 0
@@ -253,46 +260,39 @@ def get_similarity(indices):
  print('done with sim')
  return sim
 
-def getlabel(indices):
+def getlabel(indices, sim, mapping):
     #Size of label_dist = 200
     h = 20
     ldict = [(y[x]) for x in indices]
     label_dist = [0 for z in range(h)]
+    collective = [0 for z in range(h)]
+    final_score = [0 for z in range(h)]
+    new_labels = [0 for z in range(h)]
 
     for i in range(h):
         score = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
         label_dist[i] = int(score)
+        simscore = sim[i]
+        collective[i] = (score*simscore)
+        map = mapping[i]
+        final_score[i] = map + collective[i]
+        new_labels[i] = round(total_list[i] + final_score[i])
         #label_dist = np.abs(ldict[0]-ldict[1])
         #print(label_dist)
     
-    print('done with label_dist')
-    return label_dist
+    print('Collective:', collective)
+    print('Finale:', new_labels)
+    return label_dist, collective
 
-#Final equation from paper Seeing Stars:... by Pang Lee
-'''
-def total_equation(sim, indices, label_dist):
-    print('reached total_equation')
-    
-    w = 15
-    output = [0 for x in range(w)]
-    
-    for x in indices:
-        output = (y[x[0]]) 
-        main = label_dist[(x)]
-        main2 = sim[x]
-        print(output)  
-        print(main)
-        print(main2)
-      
-    return output
+
+
     
 #Function Calls
 indices = knearest()
-label_dist = getlabel(indices)
 sim = get_similarity(indices)
+label_dist, collective = getlabel(indices, sim, mapping)
 
-output = total_equation(sim, indices, label_dist)
+#output = total_equation(sim, indices, label_dist)
 
 #similarity(label_dist)
 #sim = distance(labels)
-'''
