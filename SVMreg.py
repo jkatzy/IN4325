@@ -10,10 +10,10 @@ from sklearn.neighbors import NearestNeighbors
 #nltk.download('all')
 from nltk.corpus import stopwords, wordnet 
 from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
-from scipy import spatial
 from nltk.corpus import wordnet as wn
 import matplotlib.pyplot as plt
 from sklearn.metrics import plot_confusion_matrix
+from nltk import pos_tag
 
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
@@ -332,6 +332,7 @@ def getlabel(indices, sim, mapping, h):
 '''
 Function Calls
 '''
+#H is the number of datapoints, set accordingly
 h = 1000
 mapping = get_mapping(h)
 indices = knearest(h)
