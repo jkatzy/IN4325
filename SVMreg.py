@@ -2,33 +2,18 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
-from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix as cm
-
 from sklearn.svm import SVR
-
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestNeighbors
-
-import nltk 
 #nltk.download('all')
-from nltk.corpus import wordnet as wn
-
 from nltk.corpus import stopwords, wordnet 
 from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
 from scipy import spatial
-
-from nltk import pos_tag
-
-import numpy as np
+from nltk.corpus import wordnet as wn
 import matplotlib.pyplot as plt
-
-from sklearn import svm, datasets
 from sklearn.metrics import plot_confusion_matrix
-
 
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
@@ -134,13 +119,21 @@ if SetChoice == "Combined":
     print(prediction)
     print(len(prediction))
     
-    h = 20
+    '''
+    Mapping : The negative distance between the predicted(total_list) and actual labels(y) of vectX
+    Set h to size of indices, label_dist, sim....
+    ''' 
+def get_mapping(h):
     mapping = [0 for z in range(h)]
-
+    
     for i in range(h):
         mapping[i] = -1*(total_list[i] - y[i])
     print('Mapping', mapping)
     
+    return mapping
+'''
+Generate confusion matrices  
+'''   
 def confusion_matrix(classifier, vectX, y_true, y_pred):
     
     my_cm = cm(y_true, y_pred, labels=[0.0,1.0,2.0,3.0,4.0])
@@ -161,15 +154,16 @@ def confusion_matrix(classifier, vectX, y_true, y_pred):
     print(disp.confusion_matrix)   
     plt.show()
 
-#Generate confusion matrices     
+'''
+cm_1 -> confusion matrix for svc
+'''
 cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
 print(cm_1)
-    
- #TODO: Change vectX to vectX[test]
- #TODO : Figure out what alogrithm and leaf size to use
- #TODO : Fix dictionary appending of data
- #TODO : Distance function between labels
- #TODO : Summation of distance and similarity function
+
+'''
+Similarity function for metric labelling : 
+#TODO : add ref to tutorial
+'''
 
 def penn_to_wn(tag):
     """ Convert between a Penn Treebank tag to a simplified Wordnet tag """
@@ -195,7 +189,7 @@ def tagged_to_synset(word, tag):
     except:
         return None
 
-
+#Compare the similarity between two sentences using Wordnet
 def sentence_similarity(sentence1, sentence2):
 
     """ compute the sentence similarity using Wordnet """
@@ -224,45 +218,88 @@ def sentence_similarity(sentence1, sentence2):
                 return score
             except:
                 return None        
-
-
-def knearest():
-    
+            
+'''            
+Finding the nearest neighbour of a phrase 
+Returns indices or small_indices
+Prints distances, indices of the nearest neighbour to x
+'''
+def knearest(h):
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
  radius=1.0).fit(vectX)
  distances, indices = nbrs.kneighbors(vectX)
  
- print(distances)
+ #Prints the distances between datapoint x and its neighbour 
+ #(including distance from x to x thus 0)
  
- small_indices = indices[:20]
+ print('Distances', distances)
+ 
+ #Prints the indices of x and its neighbour
+ print('Indices', indices)
+
+ #Use small_indices to run all of the code faster
+ #Make sure that the cut on the indices matches the size of sim, mapping, label_dist
+ small_indices = indices[:h]
  return small_indices
 
-def get_similarity(indices):
+''' Returns cosine similarity list : cosim
+
+def get_similarity_cosine(indices):
  w,h = 1, 20
  #h is the number of lists, w is the number of items
- sim = [[0 for x in range(w)] for y in range(h)] 
-
- #print (indices)
- #print(type(sim)) 
+ cosim = [[0 for x in range(w)] for y in range(h)] 
  X = df_drop_train.Phrase
 
  for k in range(h):
          for i in indices:  
              #Cosine similarity -. most values equate to 1
-             #cosim = 1 - spatial.distance.cosine(int(y[i[0]]), int(y[i[1]]))
-             
-             score = sentence_similarity(X.iloc[i[0]],X.iloc[i[1]])            
+             cosim = 1 - spatial.distance.cosine(int(y[i[0]]), int(y[i[1]]))             
+ return cosim
+'''
+
+'''
+Returns wordnet similarity list : sim with dimensions w,h
+Calls  sentence_similarity()
+Uses X (sentence training dataframe)
+'''
+def get_similarity_wordnet(indices, h):
+ #h is the number of lists, w is the number of items
+ #For every additional neighbour, increase item size w by 1
+ w = 1
+ #Initalize sim, X
+ sim = [[0 for x in range(w)] for y in range(h)] 
+ X = df_drop_train.Phrase
+
+#For each i in indices, compute the similarity between 
+#the sentence x and its neighbour (i[0],i[1]) and put this score into each list
+#in sim.
+ for k in range(h):
+         for i in indices:  
+             score = sentence_similarity(X.iloc[i[0]],X.iloc[i[1]])        
+             #If score = None, means no similarity
              if score == None: 
                  score = 0
-             #Similarity Wordnet 
-             #sim[k] = [i[0], i[1], score]
              sim[k] = score
- print('done with sim')
+ #Line print below for dealing with large datasets, checking how far the program has run
+ print('Done with computing the sim')
+ 
+ #Return sim
  return sim
 
-def getlabel(indices, sim, mapping):
+'''
+Returns final output
+ldict : the labels for the indices 
+label_dist : Calculates the distance between label of x, and its neighbour
+collective : Multiples label_dist by the similarity score for x and its neighbour (sim)
+           : For more than 1 neighbors, please add summation function
+           : alpha is hyperparameter. Can be tuned. 
+mapping : Calculates the negative distance between the label assigned and (is initalized above)
+final_score : The mapping + alpha(collective)
+
+new_labels : Generate the new label of x, based on the final_score. Round this. 
+'''
+def getlabel(indices, sim, mapping, h):
     #Size of label_dist = 200
-    h = 20
     ldict = [(y[x]) for x in indices]
     label_dist = [0 for z in range(h)]
     collective = [0 for z in range(h)]
@@ -270,27 +307,37 @@ def getlabel(indices, sim, mapping):
     new_labels = [0 for z in range(h)]
 
     for i in range(h):
-        score = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])
-        label_dist[i] = int(score)
+        #Label distance for label_dist
+        dist = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])    
+        label_dist[i] = int(dist)
+        # Get similarity score
         simscore = sim[i]
-        collective[i] = (score*simscore)
+        #Calculate collective score
+        collective[i] = (dist*simscore)
+        #Get mapping
         map = mapping[i]
+        #Calculate final score
         final_score[i] = map + collective[i]
+        #Generate the new labels
         new_labels[i] = round(total_list[i] + final_score[i])
-        #label_dist = np.abs(ldict[0]-ldict[1])
-        #print(label_dist)
     
+    #Print these, please comment out for large datasets
     print('Collective:', collective)
     print('Finale:', new_labels)
-    return label_dist, collective
-
-
-
+    print('New Labels',new_labels)
     
-#Function Calls
-indices = knearest()
-sim = get_similarity(indices)
-label_dist, collective = getlabel(indices, sim, mapping)
+    return new_labels
+
+#TODO : new_labels confusion matrix
+'''
+Function Calls
+'''
+h = 1000
+mapping = get_mapping(h)
+indices = knearest(h)
+#cosim = get_similarity_wordnet(indices)
+sim = get_similarity_wordnet(indices, h)
+new_labels = getlabel(indices, sim, mapping,h)
 
 #output = total_equation(sim, indices, label_dist)
 
