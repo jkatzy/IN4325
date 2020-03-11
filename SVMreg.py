@@ -1,3 +1,4 @@
+import nltk
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -7,7 +8,7 @@ from sklearn.metrics import confusion_matrix as cm
 from sklearn.svm import SVR
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestNeighbors
-#nltk.download('all')
+
 from nltk.corpus import stopwords, wordnet 
 from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
 from nltk.corpus import wordnet as wn
@@ -15,8 +16,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import classification_report ,confusion_matrix as cm 
 from nltk import pos_tag
+<<<<<<< HEAD
 import scipy as sc
 
+=======
+#nltk.download('all')
+>>>>>>> origin/SVM-TFID-KNN
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
 df_test = pd.read_csv("test.tsv", sep="\t")
@@ -71,11 +76,34 @@ if SetChoice == "Combined":
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
     vectX_test = vectX_traintest[156060:]
+<<<<<<< HEAD
     vectX = vectX[:h] #CUT FOR REG, can remove
     vectX_test = vectX_test[:h] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
     y = y[:h] #CUT FOR REG, can remove
 
+
+if SetChoice == "CombinedSentences":
+    print("Using CombinedSentences")
+    X_traintest= df_drop_traintest.Phrase
+    #print(X_traintest)
+    print(X_traintest[:8529]) #index doesnt match with sentence number because some sentence numbers are missing
+    print(X_traintest[8529:])
+    vectX_traintest = vectorizer.fit_transform(X_traintest)
+    vectX = vectX_traintest[:8529]
+    vectX_test = vectX_traintest[8529:]
+    #vectX = vectX[:20000] #CUT FOR REG, can remove
+    #vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
+    y = df_traintest[:8529].Sentiment
+    #y = y[:20000] #CUT FOR REG, can remove
+    print(vectorizer.get_feature_names())
+    print("{} {} {} {}".format(np.shape(vectX_traintest),np.shape(vectX),np.shape(vectX_test),np.shape(y)) )
+=======
+    vectX = vectX[:2000] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
+    y = df_traintest[:156060].Sentiment
+    y = y[:2000] #CUT FOR REG, can remove
+>>>>>>> origin/SVM-TFID-KNN
 
 if SetChoice == "CombinedSentences":
     print("Using CombinedSentences")
@@ -366,6 +394,7 @@ indices = knearest(h)
 sim = get_similarity_cosine(indices, h)
 #sim = get_similarity_wordnet(indices, h)
 new_labels = getlabel(indices, sim, mapping,h)
+<<<<<<< HEAD
 
 my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0,4.0])
 print('CM : No metric' , my_cm)
@@ -378,6 +407,9 @@ print('CM Metric Cosine',cm_metric_cosine)
 
 
 
+=======
+print(new_labels)
+>>>>>>> origin/SVM-TFID-KNN
 #output = total_equation(sim, indices, label_dist)
 
 #similarity(label_dist)
