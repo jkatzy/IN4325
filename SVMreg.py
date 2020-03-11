@@ -19,6 +19,11 @@ svc = LinearSVC(C=3.0,
                 verbose=0
 )
 
+svr = LinearSVR(C=1.0,
+                epsilon=0.2,
+                max_iter=100000,
+                tol=1e-05)
+
 train_x, train_y = Vectorizer("train.tsv").get_model()
 # test_x, test_y = Vectorizer("test.tsv", train=False).get_model()
 
@@ -29,8 +34,9 @@ train_x, train_y = Vectorizer("train.tsv").get_model()
 #print(scores)
 skf = StratifiedKFold(n_splits=5)
 for train, test in skf.split(train_x, train_y):
-    svc.fit(train_x, train_y)
-    train_score = svc.score(train_x[train], train_y[train])
-    test_score = svc.score(train_x[test], train_y[test])
-    print("SVM OVA: Train Score = {}, Test Score= {}".format(train_score, test_score))
+    svr.fit(train_x, train_y)
+    train_score = svr.score(train_x[train], train_y[train])
+    test_score = svr.score(train_x[test], train_y[test])
+    print("SVR: Train Score = {}, Test Score= {}".format(train_score, test_score))
+
 
