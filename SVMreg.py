@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix as cm
 from sklearn.svm import SVR
@@ -13,7 +13,9 @@ from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
 from nltk.corpus import wordnet as wn
 import matplotlib.pyplot as plt
 from sklearn.metrics import plot_confusion_matrix
+from sklearn.metrics import classification_report ,confusion_matrix as cm 
 from nltk import pos_tag
+import scipy as sc
 
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
@@ -22,12 +24,17 @@ df_traintest = pd.read_csv("traintest.tsv", sep="\t")
 
 
 # Take only the whole sentence if we want to give sentiment per sentence/review
-df_drop_train = df_train.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
-df_drop_test = df_test.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
+df_drop_train = df_train.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("train_sentences.tsv", sep="\t") #
+df_drop_test = df_test.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("test_sentences.tsv", sep="\t") #
+df_drop_traintest= df_traintest.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("traintest_sentences.tsv", sep="\t") #
+
+#df_drop_train.to_csv('train_sentences.tsv', index=False, sep = '\t')
+#df_drop_test.to_csv('test_sentences.tsv', index=False, sep = '\t')
 
 # SVM Regression
-svr = SVR(C=1.0,
+svr = LinearSVR(C=1.0,
           epsilon=0.2,
+        max_iter=100000,
           tol=1e-05)
 # SVM OVA
 svc = LinearSVC(C=1.0,
@@ -47,7 +54,9 @@ svc = LinearSVC(C=1.0,
 vectorizer = TfidfVectorizer(min_df = 5,
                              max_df = 0.8,
                              sublinear_tf = True,
-                             use_idf = True)
+                             use_idf = True,
+                             )
+                             #stop_words='english')
 
 # Select which set to use
 SetChoice= "Combined"
@@ -57,16 +66,28 @@ if SetChoice == "Combined":
     print("Using Combined")
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
-    vectX = vectX_traintest[:15606]
-    vectX_test = vectX_traintest[15606:]
-    vectX = vectX[:2000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
-    y = df_traintest[:15606].Sentiment
-    y = y[:2000] #CUT FOR REG, can remove
-    vectX = vectX[:2000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
-    y = df_traintest[:15606].Sentiment
-    y = y[:2000] #CUT FOR REG, can remove
+    vectX = vectX_traintest[:156060]
+    vectX_test = vectX_traintest[156060:]
+    vectX = vectX[:3000] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:3000] #CUT FOR REG, can remove
+    y = df_traintest[:156060].Sentiment
+    y = y[:3000] #CUT FOR REG, can remove
+
+if SetChoice == "CombinedSentences":
+    print("Using CombinedSentences")
+    X_traintest= df_drop_traintest.Phrase
+    #print(X_traintest)
+    print(X_traintest[:8529]) #index doesnt match with sentence number because some sentence numbers are missing
+    print(X_traintest[8529:])
+    vectX_traintest = vectorizer.fit_transform(X_traintest)
+    vectX = vectX_traintest[:8529]
+    vectX_test = vectX_traintest[8529:]
+    #vectX = vectX[:20000] #CUT FOR REG, can remove
+    #vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
+    y = df_traintest[:8529].Sentiment
+    #y = y[:20000] #CUT FOR REG, can remove
+    print(vectorizer.get_feature_names())
+    print("{} {} {} {}".format(np.shape(vectX_traintest),np.shape(vectX),np.shape(vectX_test),np.shape(y)) )
 
 # For when classifying all phrases
 if SetChoice == "Phrases":
@@ -101,7 +122,7 @@ for train, test in skf_svr.split(vectX, y):
     test_score = svr.score(vectX[test], y[test])
     print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
 
-if SetChoice == "Combined":
+if SetChoice == "Combined" or SetChoice == "CombinedSentences":
     #predict test set with svc
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
@@ -118,7 +139,6 @@ if SetChoice == "Combined":
     prediction = gnbfit.predict(vectX_test.toarray())
     print(prediction)
     print(len(prediction))
-    
     '''
     Mapping : The negative distance between the predicted(total_list) and actual labels(y) of vectX
     Set h to size of indices, label_dist, sim....
@@ -128,9 +148,10 @@ def get_mapping(h):
     
     for i in range(h):
         mapping[i] = -1*(total_list[i] - y[i])
-    print('Mapping', mapping)
+    #print('Mapping', mapping)
     
     return mapping
+
 '''
 Generate confusion matrices  
 '''   
@@ -153,13 +174,14 @@ def confusion_matrix(classifier, vectX, y_true, y_pred):
     print(title)
     print(disp.confusion_matrix)   
     plt.show()
-
+    
 '''
 cm_1 -> confusion matrix for svc
 '''
 cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
 print(cm_1)
 
+    
 '''
 Similarity function for metric labelling : 
 #TODO : add ref to tutorial
@@ -226,7 +248,7 @@ Prints distances, indices of the nearest neighbour to x
 '''
 def knearest(h):
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
- radius=1.0).fit(vectX)
+ radius=1.0).fit(vectX_test)
  distances, indices = nbrs.kneighbors(vectX)
  
  #Prints the distances between datapoint x and its neighbour 
@@ -243,25 +265,24 @@ def knearest(h):
  return small_indices
 
 ''' Returns cosine similarity list : cosim
-
-def get_similarity_cosine(indices):
- w,h = 1, 20
- #h is the number of lists, w is the number of items
- cosim = [[0 for x in range(w)] for y in range(h)] 
- X = df_drop_train.Phrase
-
- for k in range(h):
-         for i in indices:  
-             #Cosine similarity -. most values equate to 1
-             cosim = 1 - spatial.distance.cosine(int(y[i[0]]), int(y[i[1]]))             
- return cosim
 '''
+def get_similarity_cosine(indices, h):
+ #h is the number of lists, w is the number of items
+ cosim = [0 for z in range(h)]
+
+ for x in range(h):
+     for i in indices:  
+         #Cosine similarity -. most values equate to 1
+         cosimscore = 1 - sc.spatial.distance.cosine(y[i[0]], y[i[1]]) 
+         cosim[x] = cosimscore
+ return cosim
+
 
 '''
 Returns wordnet similarity list : sim with dimensions w,h
 Calls  sentence_similarity()
 Uses X (sentence training dataframe)
-'''
+
 def get_similarity_wordnet(indices, h):
  #h is the number of lists, w is the number of items
  #For every additional neighbour, increase item size w by 1
@@ -285,6 +306,8 @@ def get_similarity_wordnet(indices, h):
  
  #Return sim
  return sim
+
+'''
 
 '''
 Returns final output
@@ -322,9 +345,9 @@ def getlabel(indices, sim, mapping, h):
         new_labels[i] = round(total_list[i] + final_score[i])
     
     #Print these, please comment out for large datasets
-    print('Collective:', collective)
-    print('Finale:', new_labels)
-    print('New Labels',new_labels)
+    #print('Collective:', collective)
+    #print('Finale:', new_labels)
+    #print('New Labels',new_labels)
     
     return new_labels
 
@@ -333,12 +356,23 @@ def getlabel(indices, sim, mapping, h):
 Function Calls
 '''
 #H is the number of datapoints, set accordingly
-h = 1000
+h = 2000
 mapping = get_mapping(h)
 indices = knearest(h)
-#cosim = get_similarity_wordnet(indices)
-sim = get_similarity_wordnet(indices, h)
+sim = get_similarity_cosine(indices, h)
+#sim = get_similarity_wordnet(indices, h)
 new_labels = getlabel(indices, sim, mapping,h)
+
+my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0,4.0])
+print('CM : No metric' , my_cm)
+
+cm_metric_cosine = cm(y_true, new_labels, labels=[0.0,1.0,2.0,3.0,4.0])
+print('CM Metric Cosine',cm_metric_cosine)
+
+print(classification_report(y_true, total_list))
+print(classification_report(y_true, new_labels))
+
+
 
 #output = total_equation(sim, indices, label_dist)
 
