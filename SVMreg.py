@@ -1,20 +1,21 @@
+import nltk
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix as cm
 from sklearn.svm import SVR
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestNeighbors
-#nltk.download('all')
+
 from nltk.corpus import stopwords, wordnet 
 from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
 from nltk.corpus import wordnet as wn
 import matplotlib.pyplot as plt
 from sklearn.metrics import plot_confusion_matrix
 from nltk import pos_tag
-
+#nltk.download('all')
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
 df_test = pd.read_csv("test.tsv", sep="\t")
@@ -22,12 +23,17 @@ df_traintest = pd.read_csv("traintest.tsv", sep="\t")
 
 
 # Take only the whole sentence if we want to give sentiment per sentence/review
-df_drop_train = df_train.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
-df_drop_test = df_test.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
+df_drop_train = df_train.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("train_sentences.tsv", sep="\t") #
+df_drop_test = df_test.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("test_sentences.tsv", sep="\t") #
+df_drop_traintest= df_traintest.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()#pd.read_csv("traintest_sentences.tsv", sep="\t") #
+
+#df_drop_train.to_csv('train_sentences.tsv', index=False, sep = '\t')
+#df_drop_test.to_csv('test_sentences.tsv', index=False, sep = '\t')
 
 # SVM Regression
-svr = SVR(C=1.0,
+svr = LinearSVR(C=1.0,
           epsilon=0.2,
+        max_iter=100000,
           tol=1e-05)
 # SVM OVA
 svc = LinearSVC(C=1.0,
@@ -47,7 +53,9 @@ svc = LinearSVC(C=1.0,
 vectorizer = TfidfVectorizer(min_df = 5,
                              max_df = 0.8,
                              sublinear_tf = True,
-                             use_idf = True)
+                             use_idf = True,
+                             )
+                             #stop_words='english')
 
 # Select which set to use
 SetChoice= "Combined"
@@ -57,16 +65,28 @@ if SetChoice == "Combined":
     print("Using Combined")
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
-    vectX = vectX_traintest[:15606]
-    vectX_test = vectX_traintest[15606:]
+    vectX = vectX_traintest[:156060]
+    vectX_test = vectX_traintest[156060:]
     vectX = vectX[:2000] #CUT FOR REG, can remove
     vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
-    y = df_traintest[:15606].Sentiment
+    y = df_traintest[:156060].Sentiment
     y = y[:2000] #CUT FOR REG, can remove
-    vectX = vectX[:2000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
-    y = df_traintest[:15606].Sentiment
-    y = y[:2000] #CUT FOR REG, can remove
+
+if SetChoice == "CombinedSentences":
+    print("Using CombinedSentences")
+    X_traintest= df_drop_traintest.Phrase
+    #print(X_traintest)
+    print(X_traintest[:8529]) #index doesnt match with sentence number because some sentence numbers are missing
+    print(X_traintest[8529:])
+    vectX_traintest = vectorizer.fit_transform(X_traintest)
+    vectX = vectX_traintest[:8529]
+    vectX_test = vectX_traintest[8529:]
+    #vectX = vectX[:20000] #CUT FOR REG, can remove
+    #vectX_test = vectX_test[:20000] #CUT FOR REG, can remove
+    y = df_traintest[:8529].Sentiment
+    #y = y[:20000] #CUT FOR REG, can remove
+    print(vectorizer.get_feature_names())
+    print("{} {} {} {}".format(np.shape(vectX_traintest),np.shape(vectX),np.shape(vectX_test),np.shape(y)) )
 
 # For when classifying all phrases
 if SetChoice == "Phrases":
@@ -101,7 +121,7 @@ for train, test in skf_svr.split(vectX, y):
     test_score = svr.score(vectX[test], y[test])
     print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
 
-if SetChoice == "Combined":
+if SetChoice == "Combined" or SetChoice == "CombinedSentences":
     #predict test set with svc
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
@@ -339,7 +359,7 @@ indices = knearest(h)
 #cosim = get_similarity_wordnet(indices)
 sim = get_similarity_wordnet(indices, h)
 new_labels = getlabel(indices, sim, mapping,h)
-
+print(new_labels)
 #output = total_equation(sim, indices, label_dist)
 
 #similarity(label_dist)
