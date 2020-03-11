@@ -16,12 +16,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import classification_report ,confusion_matrix as cm 
 from nltk import pos_tag
-<<<<<<< HEAD
 import scipy as sc
+from sklearn.metrics import mean_squared_error, r2_score
 
-=======
 #nltk.download('all')
->>>>>>> origin/SVM-TFID-KNN
 # Read the files into dataframes
 df_train = pd.read_csv("train.tsv", sep="\t")
 df_test = pd.read_csv("test.tsv", sep="\t")
@@ -67,8 +65,8 @@ vectorizer = TfidfVectorizer(min_df = 5,
 SetChoice= "Combined"
 
 #Match h to vectX_test 
-h = 1000
-
+h = 5000
+w = 5000
 # Combine the train and test set into one file such that tfidf vectorizer will give same feature vector length, required for when predicting
 if SetChoice == "Combined":
     print("Using Combined")
@@ -76,10 +74,10 @@ if SetChoice == "Combined":
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
     vectX_test = vectX_traintest[156060:]
-<<<<<<< HEAD
     vectX = vectX[:h] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:h] #CUT FOR REG, can remove
+    vectX_test = vectX_test[w:2*w] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
+    y_test = y[w:2*w]
     y = y[:h] #CUT FOR REG, can remove
 
 
@@ -98,12 +96,10 @@ if SetChoice == "CombinedSentences":
     #y = y[:20000] #CUT FOR REG, can remove
     print(vectorizer.get_feature_names())
     print("{} {} {} {}".format(np.shape(vectX_traintest),np.shape(vectX),np.shape(vectX_test),np.shape(y)) )
-=======
     vectX = vectX[:2000] #CUT FOR REG, can remove
     vectX_test = vectX_test[:2000] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
     y = y[:2000] #CUT FOR REG, can remove
->>>>>>> origin/SVM-TFID-KNN
 
 if SetChoice == "CombinedSentences":
     print("Using CombinedSentences")
@@ -159,7 +155,7 @@ if SetChoice == "Combined" or SetChoice == "CombinedSentences":
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
     print(total_list)
-    y_true = np.array(y)
+    y_true = np.array(y_test)
     
     print(np.var(total_list))
     print(np.mean(total_list))    
@@ -179,7 +175,7 @@ def get_mapping(h):
     mapping = [0 for z in range(h)]
     
     for i in range(h):
-        mapping[i] = -1*(total_list[i] - y[i])
+        mapping[i] = (-1)*(total_list[i] - y[i])
     #print('Mapping', mapping)
     
     return mapping
@@ -280,8 +276,8 @@ Prints distances, indices of the nearest neighbour to x
 '''
 def knearest(h):
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
- radius=1.0).fit(vectX_test)
- distances, indices = nbrs.kneighbors(vectX_test)
+ radius=1.0).fit(vectX)
+ distances, indices = nbrs.kneighbors(vectX)
  
  #Prints the distances between datapoint x and its neighbour 
  #(including distance from x to x thus 0)
@@ -360,7 +356,7 @@ def getlabel(indices, sim, mapping, h):
     collective = [0 for z in range(h)]
     final_score = [0 for z in range(h)]
     new_labels = [0 for z in range(h)]
-    alpha = 0.2
+    alpha = 0.55
     
     for i in range(h):
         #Label distance for label_dist
@@ -369,7 +365,7 @@ def getlabel(indices, sim, mapping, h):
         # Get similarity score
         simscore = sim[i]
         #Calculate collective score
-        collective[i] = (dist*alpha*simscore)
+        collective[i] = alpha*(dist*simscore)
         #Get mapping
         map = mapping[i]
         #Calculate final score
@@ -384,7 +380,6 @@ def getlabel(indices, sim, mapping, h):
     
     return new_labels
 
-#TODO : new_labels confusion matrix
 '''
 Function Calls
 '''
@@ -394,23 +389,31 @@ indices = knearest(h)
 sim = get_similarity_cosine(indices, h)
 #sim = get_similarity_wordnet(indices, h)
 new_labels = getlabel(indices, sim, mapping,h)
-<<<<<<< HEAD
 
+'''
+Evaluation Metrics for SVC
+'''
 my_cm = cm(y_true, total_list, labels=[0.0,1.0,2.0,3.0,4.0])
 print('CM : No metric' , my_cm)
 
 cm_metric_cosine = cm(y_true, new_labels, labels=[0.0,1.0,2.0,3.0,4.0])
 print('CM Metric Cosine',cm_metric_cosine)
 
-#print(classification_report(y_true, total_list))
-#print(classification_report(y_true, new_labels))
+print(classification_report(y_true, total_list))
+print(classification_report(y_true, new_labels))
 
 
+'''
+Evaluation Metrics for SVR
+mse_svr = mean_squared_error(y_true, total_list)
 
-=======
-print(new_labels)
->>>>>>> origin/SVM-TFID-KNN
-#output = total_equation(sim, indices, label_dist)
+mse_svr_ml = mean_squared_error(y_true, new_labels)
+
+r2_svr_ml = r2_score(y_true, new_labels)
+r2_svr = r2_score(y_true, total_list)
+print(mse_svr, mse_svr_ml, r2_svr_ml, r2_svr)
+
+'''
 
 #similarity(label_dist)
 #sim = distance(labels)
