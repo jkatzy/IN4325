@@ -9,6 +9,7 @@ from sklearn.svm import LinearSVR
 from sklearn.ensemble import BaggingClassifier
 import matplotlib.pyplot as plt
 import collections
+import seaborn as sn
 from gensim.test.utils import common_texts
 from gensim.models.doc2vec import Doc2Vec
 from gensim.models.doc2vec import TaggedDocument
@@ -16,8 +17,8 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import confusion_matrix as cm
-from sklearn.metrics import plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics import classification_report
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import accuracy_score
@@ -27,21 +28,18 @@ import warnings
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"  # Also affect subprocesses
 
-def confusion_matrix(cls, data_X, y_true, y_pred, model_name):
-    # my_cm = cm(y_true, y_pred, labels=[0.0, 1.0, 2.0, 3.0, 4.0])
-    # print(my_cm)
 
-    labels = [0.0, 1.0, 2.0, 3.0, 4.0]
-    np.set_printoptions(precision=2)
-    titles_options = [("Normalized confusion matrix", 'true')]
-    for title, normalize in titles_options:
-        disp = plot_confusion_matrix(cls, data_X, y_true,
-                                     display_labels=labels,
-                                     cmap=plt.cm.Reds,
-                                     normalize=normalize)
-        # disp.ax_.set_title(title)
-        # print(disp.confusion_matrix)
-        plt.savefig(model_name + "_conf_mat")
+def conf_mat(y_true, y_pred, model_name):
+    labels = sorted(y_true.unique())
+    cm = confusion_matrix(y_true, y_pred, normalize='true')
+
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                  display_labels=labels)
+    disp.plot(include_values=True,
+              cmap=plt.cm.Reds, ax=None, xticks_rotation='horizontal',
+              values_format=None)
+    plt.show()
+    #plt.savefig(model_name + "_conf_mat")
 
 
 def tfidf(train_data, test_data):
@@ -96,8 +94,8 @@ def doc2vec(train_data, test_data):
 data = pd.read_csv('./train.tsv', sep='\t', header=0)
 
 ## Removes some class [optional]
-# data = data.query('Sentiment != 2')
-# data = data.reset_index()
+data = data.query('Sentiment != 2')
+data = data.reset_index()
 
 ## Selects only whole phrases [optional]
 # data = data.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
@@ -187,7 +185,7 @@ for n_e, embed in embeddings.items():
             else:
                 train_acc = accuracy_score(train_pred, train.Sentiment)
                 test_acc = accuracy_score(test_pred, test.Sentiment)
-                confusion_matrix(model, test_x, test.Sentiment, test_pred, '_'.join([n_e, name]))
+                conf_mat(test.Sentiment, test_pred, '_'.join([n_e, name]))
                 #print(classification_report(test.Sentiment, test_pred))
 
             train_rmse = mean_squared_error(train.Sentiment, train_pred, squared=False)
