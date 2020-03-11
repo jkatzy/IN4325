@@ -61,6 +61,9 @@ vectorizer = TfidfVectorizer(min_df = 5,
 # Select which set to use
 SetChoice= "Combined"
 
+#Match h to vectX_test 
+h = 1000
+
 # Combine the train and test set into one file such that tfidf vectorizer will give same feature vector length, required for when predicting
 if SetChoice == "Combined":
     print("Using Combined")
@@ -68,10 +71,11 @@ if SetChoice == "Combined":
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
     vectX_test = vectX_traintest[156060:]
-    vectX = vectX[:3000] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:3000] #CUT FOR REG, can remove
+    vectX = vectX[:h] #CUT FOR REG, can remove
+    vectX_test = vectX_test[:h] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
-    y = y[:3000] #CUT FOR REG, can remove
+    y = y[:h] #CUT FOR REG, can remove
+
 
 if SetChoice == "CombinedSentences":
     print("Using CombinedSentences")
@@ -178,8 +182,8 @@ def confusion_matrix(classifier, vectX, y_true, y_pred):
 '''
 cm_1 -> confusion matrix for svc
 '''
-cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
-print(cm_1)
+#cm_1 = confusion_matrix(svc, vectX, y_true, total_list)
+#print(cm_1)
 
     
 '''
@@ -328,7 +332,8 @@ def getlabel(indices, sim, mapping, h):
     collective = [0 for z in range(h)]
     final_score = [0 for z in range(h)]
     new_labels = [0 for z in range(h)]
-
+    alpha = 0.2
+    
     for i in range(h):
         #Label distance for label_dist
         dist = np.abs(ldict[i].iloc[0]-ldict[i].iloc[1])    
@@ -336,7 +341,7 @@ def getlabel(indices, sim, mapping, h):
         # Get similarity score
         simscore = sim[i]
         #Calculate collective score
-        collective[i] = (dist*simscore)
+        collective[i] = (dist*alpha*simscore)
         #Get mapping
         map = mapping[i]
         #Calculate final score
@@ -356,7 +361,6 @@ def getlabel(indices, sim, mapping, h):
 Function Calls
 '''
 #H is the number of datapoints, set accordingly
-h = 2000
 mapping = get_mapping(h)
 indices = knearest(h)
 sim = get_similarity_cosine(indices, h)
@@ -369,8 +373,8 @@ print('CM : No metric' , my_cm)
 cm_metric_cosine = cm(y_true, new_labels, labels=[0.0,1.0,2.0,3.0,4.0])
 print('CM Metric Cosine',cm_metric_cosine)
 
-print(classification_report(y_true, total_list))
-print(classification_report(y_true, new_labels))
+#print(classification_report(y_true, total_list))
+#print(classification_report(y_true, new_labels))
 
 
 
