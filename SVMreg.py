@@ -249,7 +249,7 @@ Prints distances, indices of the nearest neighbour to x
 def knearest(h):
  nbrs = NearestNeighbors(algorithm='auto', leaf_size=30, n_neighbors=2, p=2,
  radius=1.0).fit(vectX_test)
- distances, indices = nbrs.kneighbors(vectX)
+ distances, indices = nbrs.kneighbors(vectX_test)
  
  #Prints the distances between datapoint x and its neighbour 
  #(including distance from x to x thus 0)
