@@ -8,7 +8,7 @@ from sklearn.metrics import confusion_matrix as cm
 from sklearn.svm import SVR
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestNeighbors
-
+from sklearn.metrics import accuracy_score
 from nltk.corpus import stopwords, wordnet 
 from nltk import word_tokenize, WordNetLemmatizer, sent_tokenize
 from nltk.corpus import wordnet as wn
@@ -60,10 +60,10 @@ vectorizer = TfidfVectorizer(min_df = 5,
                              #stop_words='english')
 
 # Select which set to use
-SetChoice= "Phrases"
+SetChoice= "Combined"
 
 #Match h to vectX_test 
-h = 30000
+h = 2000
 
 # Combine the train and test set into one file such that tfidf vectorizer will give same feature vector length, required for when predicting
 if SetChoice == "Combined":
@@ -71,11 +71,16 @@ if SetChoice == "Combined":
     X_traintest= df_traintest.Phrase
     vectX_traintest = vectorizer.fit_transform(X_traintest)
     vectX = vectX_traintest[:156060]
-    vectX_test = vectX_traintest[156060:]
+    #vectX_test = vectX_traintest[156060:]
+    vectX_test = vectX[h:2*h]
     vectX = vectX[:h] #CUT FOR REG, can remove
-    vectX_test = vectX_test[:h] #CUT FOR REG, can remove
+    #vectX_test = vectX_test[:h] #CUT FOR REG, can remove
     y = df_traintest[:156060].Sentiment
+    y_test = y[h:2 * h]
     y = y[:h] #CUT FOR REG, can remove
+
+
+
 
 
 if SetChoice == "CombinedSentences":
@@ -140,16 +145,21 @@ for train, test in skf.split(vectX, y):
 skf_svr = StratifiedKFold(n_splits=3)
 for train, test in skf_svr.split(vectX, y):
     svr.fit(vectX[train], y[train])
-    train_score = svr.score(vectX[train], y[train])
-    test_score = svr.score(vectX[test], y[test])
-    print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
+    train_pred = svr.predict(vectX[train])
+    test_pred = svr.predict(vectX[test])
+    train_acc = accuracy_score(np.clip(np.round(train_pred),0,4), y[train])
+    test_acc = accuracy_score(np.clip(np.round(test_pred),0,4), y[test])
+    #else:
+    #train_score = svr.score(vectX[train], y[train])
+    #test_score = svr.score(vectX[test], y[test])
+    print("SVM REG: Train Score = {}, Test Score= {}".format(train_acc, test_acc))
 
 if SetChoice == "Combined" or SetChoice == "CombinedSentences":
     #predict test set with svc
     total_list = np.array(svc.predict(vectX_test))
     #np.set_printoptions(threshold=np.inf) # For printing entire array
     print(total_list)
-    y_true = np.array(y)
+    y_true = np.array(y_test)
     
     print(np.var(total_list))
     print(np.mean(total_list))    
