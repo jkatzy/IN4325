@@ -9,7 +9,6 @@ from sklearn.svm import LinearSVR
 from sklearn.ensemble import BaggingClassifier
 import matplotlib.pyplot as plt
 import collections
-import seaborn as sn
 from gensim.test.utils import common_texts
 from gensim.models.doc2vec import Doc2Vec
 from gensim.models.doc2vec import TaggedDocument
@@ -97,14 +96,6 @@ data = pd.read_csv('./train.tsv', sep='\t', header=0)
 data = data.query('Sentiment != 2')
 data = data.reset_index()
 
-## Selects only whole phrases [optional]
-# data = data.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).reset_index()
-
-
-# sw = list(stopwords.words('english'))
-# sw.remove('no')
-# sw.remove('not')
-# sw.extend(['cinema', 'film', 'series', 'movie', 'one', 'like', 'story', 'plot', ''])
 sw = ['cinema', 'film', 'series', 'movie', 'story', 'plot', '', 'the', 'of', 'an', 'a', 'she', 'he', 'to', 'our', 'it',
       'my', 'I']
 lemmatizer = WordNetLemmatizer()
@@ -158,10 +149,6 @@ lin_svr = LinearSVR(
 splitx = list(data.index)
 splity = list(data.Sentiment.values)
 
-# Split by sentence Id [optional]
-# splitx = list(data.drop_duplicates(['SentenceId']).index)
-# splity = list(data.drop_duplicates(['SentenceId']).groupby('SentenceId').head(1).Sentiment.values)
-
 skf = StratifiedKFold(n_splits=5, shuffle=True)
 models = {'Single SVC': s_svc, 'Lin SVC': lin_svc, 'RBF SVC': rbf_svc, 'SVR': lin_svr}
 embeddings = {'tfidf': tfidf, 'doc2vec': doc2vec}
@@ -186,7 +173,6 @@ for n_e, embed in embeddings.items():
                 train_acc = accuracy_score(train_pred, train.Sentiment)
                 test_acc = accuracy_score(test_pred, test.Sentiment)
                 conf_mat(test.Sentiment, test_pred, '_'.join([n_e, name]))
-                #print(classification_report(test.Sentiment, test_pred))
 
             train_rmse = mean_squared_error(train.Sentiment, train_pred, squared=False)
             test_rmse = mean_squared_error(test.Sentiment, test_pred, squared=False)

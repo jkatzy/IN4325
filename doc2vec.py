@@ -1,6 +1,5 @@
 import os
 import gensim
-#from gensim.models import Phrases
 from gensim.parsing.preprocessing import preprocess_string, remove_stopwords
 import smart_open
 import pickle
