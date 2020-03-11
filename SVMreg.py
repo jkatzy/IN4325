@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import confusion_matrix as cm
+from sklearn.metrics import confusion_matrix as cm, accuracy_score
 from sklearn.svm import SVR
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestNeighbors
@@ -146,9 +146,12 @@ for train, test in skf.split(vectX, y):
 skf_svr = StratifiedKFold(n_splits=3)
 for train, test in skf_svr.split(vectX, y):
     svr.fit(vectX[train], y[train])
-    train_score = svr.score(vectX[train], y[train])
-    test_score = svr.score(vectX[test], y[test])
-    print("SVM REG: Train Score = {}, Test Score= {}".format(train_score, test_score))
+    svr.fit(vectX[train], y[train])
+    train_pred = svr.predict(vectX[train])
+    test_pred = svr.predict(vectX[test])
+    train_acc = accuracy_score(np.clip(np.round(train_pred), 0, 4), y[train])
+    test_acc = accuracy_score(np.clip(np.round(test_pred), 0, 4), y[test])
+    print("SVM REG: Train Score = {}, Test Score= {}".format(train_acc, test_acc))
 
 if SetChoice == "Combined" or SetChoice == "CombinedSentences":
     #predict test set with svc
